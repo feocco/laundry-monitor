@@ -1,0 +1,29 @@
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "laundry-monitor"
+version = "0.1.0"
+description = "Home Assistant washer cycle monitor with mobile notifications."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "python-dotenv>=1.0.0",
+  "homelab-functions @ https://github.com/feocco/homelab-functions/archive/refs/heads/main.zip",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+]
+
+[project.scripts]
+laundry-monitor = "laundry_monitor.main:main"
+
+[tool.setuptools.packages.find]
+include = ["laundry_monitor*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,17 @@
+services:
+  laundry-monitor:
+    build: .
+    container_name: laundry-monitor
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "${HOST_BIND_ADDR:-127.0.0.1}:${SERVICE_PORT:-8102}:${SERVICE_PORT:-8102}"
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "1"
+        compress: "false"

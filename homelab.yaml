@@ -1,0 +1,29 @@
+
+service: laundry-monitor
+image: ghcr.io/feocco/laundry-monitor:latest
+package: laundry_monitor
+host: macmini
+port: 8102
+health:
+  url: http://127.0.0.1:8102/health
+checks:
+  - python -m pytest -q
+  - docker build .
+runtime:
+  env_example: .env.example
+  persistent_paths:
+    - data/
+  external_dependencies:
+    - Home Assistant WebSocket
+    - Home Assistant mobile notify services
+    - homelab-functions Python package
+risk:
+  default: direct
+  canary:
+    - Dockerfile
+    - laundry_monitor/detector.py
+    - laundry_monitor/monitor.py
+  restore:
+    - data/**
+    - laundry_monitor/detector.py
+    - laundry_monitor/runtime_state.py

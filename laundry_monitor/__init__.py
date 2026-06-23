@@ -1,0 +1,1 @@
+"""Package for laundry-monitor."""
