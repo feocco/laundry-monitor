@@ -196,6 +196,14 @@ class LaundryMonitor:
     async def check_scheduled_workflows(self, now: datetime) -> None:
         transfer = self.state.washer_transfer
         if (
+            transfer.waiting_since is not None
+            and transfer.next_reminder_at is None
+            and transfer.reminder_sent_at is not None
+        ):
+            transfer.next_reminder_at = transfer.reminder_sent_at + timedelta(
+                hours=self.settings.transfer_repeat_hours
+            )
+        if (
             transfer.waiting_since is None
             or transfer.next_reminder_at is None
             or now < transfer.next_reminder_at

@@ -104,6 +104,18 @@ def test_dryer_start_clears_waiting_state(tmp_path) -> None:
     assert monitor.state.washer_transfer.waiting_since is None
 
 
+def test_existing_sent_reminder_without_next_reminder_gets_repeat_schedule(tmp_path) -> None:
+    monitor = LaundryMonitor(_settings(tmp_path))
+    start = _time()
+    _run_cycle(monitor, "sensor.smartthings_outletv4_power", start, "Washer")
+    monitor.state.washer_transfer.reminder_sent_at = start + timedelta(hours=7)
+    monitor.state.washer_transfer.next_reminder_at = None
+
+    asyncio.run(monitor.check_scheduled_workflows(start + timedelta(hours=8)))
+
+    assert monitor.state.washer_transfer.next_reminder_at == start + timedelta(hours=15)
+
+
 def test_reminder_actions_snooze_and_done(tmp_path) -> None:
     monitor = LaundryMonitor(_settings(tmp_path))
     start = _time()
