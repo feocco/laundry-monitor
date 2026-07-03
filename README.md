@@ -35,13 +35,12 @@ The default detector is intentionally conservative for both appliances:
   20 W;
 - a cycle must run at least 20 minutes and peak above 100 W;
 - completion requires low power under 5 W for 10 minutes. Washer detection also
-  keeps the existing 20-minute pause tolerance to avoid false completion during
-  long pauses.
+  uses a 12-minute pause tolerance to avoid false completion during short fill
+  or soak pauses.
 
-Washer completions notify the configured recipients immediately. Dryer
-completion notifications are disabled by default, but dryer starts still clear
-the washer-to-dryer waiting state. `GET /v1/status` includes recent lifecycle
-counts and events for production review.
+Washer and dryer completions notify the configured recipients immediately.
+Dryer starts still clear the washer-to-dryer waiting state. `GET /v1/status`
+includes recent lifecycle counts and events for production review.
 
 ## Validation
 

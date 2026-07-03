@@ -19,7 +19,7 @@ Use `.env.example` for placeholders only. Real values belong in ignored local
 | `WASHER_NOTIFY_ENABLED` | `true` | Enables washer completion notifications. |
 | `DRYER_NAME` | `Dryer` | Display name used for dryer lifecycle events. |
 | `DRYER_POWER_ENTITY` | `sensor.dryer_plug_power` | Home Assistant power sensor used for dryer detection and transfer clearing. |
-| `DRYER_NOTIFY_ENABLED` | `false` | Enables dryer completion notifications after validation. |
+| `DRYER_NOTIFY_ENABLED` | `true` | Enables dryer completion notifications. |
 | `WASHER_TO_DRYER_REMINDER_HOURS` | `6` | Hours after washer completion before sending the not-moved reminder. |
 | `WASHER_TO_DRYER_SNOOZE_HOURS` | `2` | Snooze duration for the washer-not-moved reminder action. |
 | `WASHER_TO_DRYER_REPEAT_HOURS` | `8` | Repeat interval for washer-not-moved reminders until cleared or dryer start. |
@@ -35,7 +35,7 @@ Use `.env.example` for placeholders only. Real values belong in ignored local
 | `MINIMUM_ACTIVITY_MINUTES` | `10` | Required active span inside the start window. |
 | `MINIMUM_CYCLE_MINUTES` | `20` | Minimum valid cycle runtime. |
 | `QUIET_MINUTES` | `10` | Required low-power quiet period before completion is considered. |
-| `PAUSE_TOLERANCE_MINUTES` | `20` | Low-power pauses shorter than this do not complete a cycle. |
+| `PAUSE_TOLERANCE_MINUTES` | `12` | Low-power washer pauses shorter than this do not complete a cycle. |
 | `DUPLICATE_COOLDOWN_MINUTES` | `30` | Suppresses duplicate notifications for the same cycle. |
 | `STALE_AFTER_MINUTES` | `15` | Health status degrades when no fresh numeric sample has arrived. |
 | `DRY_RUN` | `false` | Skips Home Assistant service calls when true. |

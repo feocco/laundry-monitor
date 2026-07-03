@@ -22,7 +22,7 @@ def test_load_settings_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.appliances[1].power_entity == "sensor.dryer_plug_power"
     assert settings.appliances[1].name == "Dryer"
     assert settings.appliances[1].slug == "dryer"
-    assert settings.appliances[1].notify_enabled is False
+    assert settings.appliances[1].notify_enabled is True
     assert settings.notify_services == (
         "notify.mobile_app_joe",
         "notify.mobile_app_jess",
@@ -39,6 +39,7 @@ def test_load_settings_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.transfer_snooze_hours == 2
     assert settings.transfer_repeat_hours == 8
     assert settings.thresholds.idle_watts == 5.0
+    assert settings.thresholds.pause_tolerance_minutes == 12
 
 
 def test_load_settings_overrides_repeat_reminder_hours(
