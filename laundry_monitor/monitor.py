@@ -223,7 +223,7 @@ class LaundryMonitor:
             ],
         )
         transfer.reminder_sent_at = now
-        transfer.next_reminder_at = None
+        transfer.next_reminder_at = now + timedelta(hours=self.settings.transfer_repeat_hours)
 
     def handle_notification_action(
         self,
@@ -262,13 +262,84 @@ class LaundryMonitor:
                 "cleared_at": _iso(self.state.washer_transfer.cleared_at),
             },
             "validation": {
-                "pending": [
-                    event.event_id
-                    for event in self.state.lifecycle_events
-                    if event.event_id not in self.state.validation_responses
-                ],
+                "pending": self._pending_validation_events(),
                 "latest_response": _latest_validation_response(self.state.validation_responses),
             },
+            "lifecycle": self._lifecycle_summary(),
+        }
+
+    def _pending_validation_events(self) -> list[str]:
+        if not self.settings.lifecycle_validation_enabled:
+            return []
+        return [
+            event.event_id
+            for event in self.state.lifecycle_events
+            if event.event_type in self.settings.lifecycle_validation_events
+            and event.event_id not in self.state.validation_responses
+        ]
+
+    def _lifecycle_summary(self) -> dict[str, Any]:
+        appliances: dict[str, dict[str, Any]] = {
+            appliance.slug: {
+                "starts": 0,
+                "finishes": 0,
+                "last_started_at": None,
+                "last_finished_at": None,
+                "runtime_minutes_range": None,
+                "peak_watts_range": None,
+            }
+            for appliance in self.settings.appliances
+        }
+        runtimes: dict[str, list[float]] = {
+            appliance.slug: [] for appliance in self.settings.appliances
+        }
+        peaks: dict[str, list[float]] = {
+            appliance.slug: [] for appliance in self.settings.appliances
+        }
+
+        for event in self.state.lifecycle_events:
+            appliance = appliances.setdefault(
+                event.appliance_slug,
+                {
+                    "starts": 0,
+                    "finishes": 0,
+                    "last_started_at": None,
+                    "last_finished_at": None,
+                    "runtime_minutes_range": None,
+                    "peak_watts_range": None,
+                },
+            )
+            if event.event_type in {
+                LifecycleEventType.WASHER_STARTED,
+                LifecycleEventType.DRYER_STARTED,
+            }:
+                appliance["starts"] += 1
+                appliance["last_started_at"] = _iso(event.occurred_at)
+                continue
+            appliance["finishes"] += 1
+            appliance["last_finished_at"] = _iso(event.occurred_at)
+            if event.runtime_minutes is not None:
+                runtimes.setdefault(event.appliance_slug, []).append(event.runtime_minutes)
+            if event.peak_watts is not None:
+                peaks.setdefault(event.appliance_slug, []).append(event.peak_watts)
+
+        for slug, values in runtimes.items():
+            if values:
+                appliances[slug]["runtime_minutes_range"] = [min(values), max(values)]
+        for slug, values in peaks.items():
+            if values:
+                appliances[slug]["peak_watts_range"] = [min(values), max(values)]
+
+        return {
+            "appliances": appliances,
+            "latest_events": [
+                _lifecycle_event_status(event, self.state.validation_responses)
+                for event in sorted(
+                    self.state.lifecycle_events,
+                    key=lambda item: item.occurred_at,
+                    reverse=True,
+                )[:12]
+            ],
         }
 
     def _mark_washer_waiting(self, event: LifecycleEvent) -> None:
@@ -345,6 +416,22 @@ def _latest_validation_response(responses: dict[str, ValidationResponse]) -> dic
         return None
     latest = max(responses.values(), key=lambda response: response.responded_at)
     return latest.to_dict()
+
+
+def _lifecycle_event_status(
+    event: LifecycleEvent,
+    responses: dict[str, ValidationResponse],
+) -> dict[str, Any]:
+    response = responses.get(event.event_id)
+    return {
+        "event_id": event.event_id,
+        "event_type": event.event_type.value,
+        "appliance": event.appliance_slug,
+        "occurred_at": event.occurred_at.isoformat(),
+        "runtime_minutes": event.runtime_minutes,
+        "peak_watts": event.peak_watts,
+        "validation_response": response.response if response else None,
+    }
 
 
 def run_monitor(settings: Settings) -> None:

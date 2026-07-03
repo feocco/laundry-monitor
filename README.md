@@ -7,7 +7,8 @@ Home Assistant laundry lifecycle monitor with mobile notifications.
 events, and sends actionable mobile notifications. Its main workflow is a
 washer-to-dryer reminder: when the washer finishes and the dryer has not started
 within 6 hours, Joe and Jess get a reminder with `Snooze 2h` and `Done`
-actions.
+actions. The reminder repeats every 8 hours until the dryer starts or the load
+is marked done.
 
 ## Quickstart
 
@@ -36,15 +37,17 @@ The default detector is intentionally conservative for both appliances:
   keeps the existing 20-minute pause tolerance to avoid false completion during
   long pauses.
 
-Washer completions can notify immediately. Dryer completion notifications are
-disabled by default while lifecycle validation is enabled, but dryer starts
-still clear the washer-to-dryer waiting state.
+Washer completions notify the configured recipients immediately. Dryer
+completion notifications are disabled by default, but dryer starts still clear
+the washer-to-dryer waiting state. `GET /v1/status` includes recent lifecycle
+counts and events for production review.
 
 ## Validation
 
-During rollout, Joe receives yes/no validation prompts for detected
-washer/dryer starts and finishes. These responses are stored in `data/state.json`
-and shown in `GET /v1/status`; they do not mutate detector state.
+Lifecycle validation prompts are disabled by default. During a future rollout,
+they can be enabled so Joe receives yes/no prompts for detected washer/dryer
+starts and finishes. These responses are stored in `data/state.json` and shown
+in `GET /v1/status`; they do not mutate detector state.
 
 ## Deployment
 

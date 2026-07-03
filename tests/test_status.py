@@ -4,7 +4,12 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 
 from laundry_monitor.config import ApplianceConfig, Settings, ThresholdConfig
-from laundry_monitor.models import EntityState, LifecycleEventType, PowerSample
+from laundry_monitor.models import (
+    EntityState,
+    LifecycleEvent,
+    LifecycleEventType,
+    PowerSample,
+)
 from laundry_monitor.monitor import LaundryMonitor
 from laundry_monitor.notify import notification_payload
 
@@ -64,7 +69,18 @@ def test_washer_finish_creates_waiting_state_and_reminder(tmp_path) -> None:
     assert reminder["washer_finished_at"] == start + timedelta(minutes=80)
     assert [button["title"] for button in reminder["buttons"]] == ["Snooze 2h", "Done"]
     assert monitor.state.washer_transfer.reminder_sent_at == reminder_due_at + timedelta(minutes=1)
-    assert monitor.state.washer_transfer.next_reminder_at is None
+    assert monitor.state.washer_transfer.next_reminder_at == reminder_due_at + timedelta(
+        minutes=1,
+        hours=8,
+    )
+
+    asyncio.run(monitor.check_scheduled_workflows(reminder_due_at + timedelta(hours=8, minutes=2)))
+
+    assert len(monitor.notifier.transfer_reminders) == 2
+    assert monitor.state.washer_transfer.next_reminder_at == reminder_due_at + timedelta(
+        hours=16,
+        minutes=2,
+    )
 
 
 def test_dryer_start_clears_waiting_state(tmp_path) -> None:
@@ -115,8 +131,93 @@ def test_reminder_actions_snooze_and_done(tmp_path) -> None:
     assert monitor.state.washer_transfer.cleared_at == start + timedelta(hours=8)
 
 
-def test_validation_prompt_and_response_are_recorded(tmp_path) -> None:
+def test_status_payload_reports_lifecycle_summary(tmp_path) -> None:
     monitor = LaundryMonitor(_settings(tmp_path))
+    start = _time()
+    monitor.state.lifecycle_events.extend(
+        [
+            LifecycleEvent(
+                event_id="washer-start",
+                event_type=LifecycleEventType.WASHER_STARTED,
+                appliance_slug="washer",
+                appliance_name="Washer",
+                occurred_at=start,
+                peak_watts=250.0,
+            ),
+            LifecycleEvent(
+                event_id="washer-finish",
+                event_type=LifecycleEventType.WASHER_FINISHED,
+                appliance_slug="washer",
+                appliance_name="Washer",
+                occurred_at=start + timedelta(minutes=80),
+                peak_watts=700.0,
+                runtime_minutes=80.0,
+            ),
+            LifecycleEvent(
+                event_id="dryer-start",
+                event_type=LifecycleEventType.DRYER_STARTED,
+                appliance_slug="dryer",
+                appliance_name="Dryer",
+                occurred_at=start + timedelta(minutes=90),
+                peak_watts=650.0,
+            ),
+        ]
+    )
+
+    payload = monitor.status_payload(stale_after_seconds=900)
+
+    assert payload["lifecycle"]["appliances"]["washer"]["starts"] == 1
+    assert payload["lifecycle"]["appliances"]["washer"]["finishes"] == 1
+    assert payload["lifecycle"]["appliances"]["washer"]["runtime_minutes_range"] == [
+        80.0,
+        80.0,
+    ]
+    assert payload["lifecycle"]["appliances"]["washer"]["peak_watts_range"] == [
+        700.0,
+        700.0,
+    ]
+    assert payload["lifecycle"]["latest_events"][0]["event_id"] == "dryer-start"
+    assert payload["lifecycle"]["latest_events"][1]["validation_response"] is None
+
+
+def test_status_payload_hides_pending_validation_when_disabled(tmp_path) -> None:
+    monitor = LaundryMonitor(_settings(tmp_path))
+    start = _time()
+    monitor.state.lifecycle_events.append(
+        LifecycleEvent(
+            event_id="washer-start",
+            event_type=LifecycleEventType.WASHER_STARTED,
+            appliance_slug="washer",
+            appliance_name="Washer",
+            occurred_at=start,
+        )
+    )
+
+    payload = monitor.status_payload(stale_after_seconds=900)
+
+    assert payload["validation"]["pending"] == []
+
+
+def test_status_payload_reports_pending_validation_when_enabled(tmp_path) -> None:
+    monitor = LaundryMonitor(_settings(tmp_path, lifecycle_validation_enabled=True))
+    start = _time()
+    monitor.state.lifecycle_events.append(
+        LifecycleEvent(
+            event_id="washer-start",
+            event_type=LifecycleEventType.WASHER_STARTED,
+            appliance_slug="washer",
+            appliance_name="Washer",
+            occurred_at=start,
+        )
+    )
+
+    payload = monitor.status_payload(stale_after_seconds=900)
+
+    assert payload["validation"]["pending"] == ["washer-start"]
+
+
+def test_validation_prompt_and_response_are_recorded(tmp_path) -> None:
+    monitor = LaundryMonitor(_settings(tmp_path, lifecycle_validation_enabled=True))
     monitor.notifier = FakeNotifier()
     start = _time()
 
@@ -149,7 +250,7 @@ def test_validation_prompt_and_response_are_recorded(tmp_path) -> None:
     assert monitor.state.validation_responses[event.event_id].response == "yes"
 
 
-def _settings(tmp_path) -> Settings:
+def _settings(tmp_path, *, lifecycle_validation_enabled: bool = False) -> Settings:
     return Settings(
         service_name="laundry-monitor",
         host="127.0.0.1",
@@ -173,7 +274,7 @@ def _settings(tmp_path) -> Settings:
         ),
         notify_services=("notify.mobile_app_joe", "notify.mobile_app_jess"),
         validation_notify_services=("notify.mobile_app_joe",),
-        lifecycle_validation_enabled=True,
+        lifecycle_validation_enabled=lifecycle_validation_enabled,
         lifecycle_validation_events=(
             LifecycleEventType.WASHER_STARTED,
             LifecycleEventType.WASHER_FINISHED,
@@ -183,6 +284,7 @@ def _settings(tmp_path) -> Settings:
         thresholds=ThresholdConfig(),
         transfer_reminder_hours=6,
         transfer_snooze_hours=2,
+        transfer_repeat_hours=8,
         state_path=tmp_path / "state.json",
         dry_run=True,
     )

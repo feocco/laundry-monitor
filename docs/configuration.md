@@ -22,7 +22,8 @@ Use `.env.example` for placeholders only. Real values belong in ignored local
 | `DRYER_NOTIFY_ENABLED` | `false` | Enables dryer completion notifications after validation. |
 | `WASHER_TO_DRYER_REMINDER_HOURS` | `6` | Hours after washer completion before sending the not-moved reminder. |
 | `WASHER_TO_DRYER_SNOOZE_HOURS` | `2` | Snooze duration for the washer-not-moved reminder action. |
-| `LIFECYCLE_VALIDATION_ENABLED` | `true` | Sends Joe yes/no prompts for configured lifecycle events during rollout. |
+| `WASHER_TO_DRYER_REPEAT_HOURS` | `8` | Repeat interval for washer-not-moved reminders until cleared or dryer start. |
+| `LIFECYCLE_VALIDATION_ENABLED` | `false` | Sends Joe yes/no prompts for configured lifecycle events during rollout. |
 | `LIFECYCLE_VALIDATION_RECIPIENTS` | `joe` | Recipients for lifecycle validation prompts. |
 | `LIFECYCLE_VALIDATION_EVENTS` | all start/finish events | Comma-separated lifecycle events to validate. |
 | `STATE_PATH` | `data/state.json` | Persistent detector state file. |

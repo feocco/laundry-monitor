@@ -69,6 +69,29 @@ def test_notifier_sends_to_all_configured_services() -> None:
     ]
 
 
+def test_notifier_sends_transfer_reminder_to_all_configured_services() -> None:
+    caller = FakeCaller()
+    notifier = Notifier(
+        caller,
+        ("notify.mobile_app_joe", "notify.mobile_app_jess"),
+    )
+
+    asyncio.run(
+        notifier.send_transfer_reminder(
+            washer_finished_at=_now(),
+            buttons=[
+                {"action": "LAUNDRY_TRANSFER_SNOOZE::token"},
+                {"action": "LAUNDRY_TRANSFER_DONE::token"},
+            ],
+        )
+    )
+
+    assert [call[:2] for call in caller.calls] == [
+        ("notify", "mobile_app_joe"),
+        ("notify", "mobile_app_jess"),
+    ]
+
+
 class FakeCaller:
     def __init__(self) -> None:
         self.calls: list[tuple[str, str, dict]] = []

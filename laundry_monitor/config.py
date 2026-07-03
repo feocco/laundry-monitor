@@ -48,6 +48,7 @@ class Settings:
     thresholds: ThresholdConfig
     transfer_reminder_hours: int
     transfer_snooze_hours: int
+    transfer_repeat_hours: int
     state_path: Path
     dry_run: bool
 
@@ -90,7 +91,7 @@ def load_settings(env_path: str | None = None) -> Settings:
         ),
         notify_services=notify_services,
         validation_notify_services=validation_notify_services,
-        lifecycle_validation_enabled=_bool("LIFECYCLE_VALIDATION_ENABLED", True),
+        lifecycle_validation_enabled=_bool("LIFECYCLE_VALIDATION_ENABLED", False),
         lifecycle_validation_events=tuple(
             LifecycleEventType(value)
             for value in _csv(
@@ -113,6 +114,7 @@ def load_settings(env_path: str | None = None) -> Settings:
         ),
         transfer_reminder_hours=_int("WASHER_TO_DRYER_REMINDER_HOURS", 6),
         transfer_snooze_hours=_int("WASHER_TO_DRYER_SNOOZE_HOURS", 2),
+        transfer_repeat_hours=_int("WASHER_TO_DRYER_REPEAT_HOURS", 8),
         state_path=Path(os.getenv("STATE_PATH", "data/state.json")),
         dry_run=_bool("DRY_RUN", False),
     )

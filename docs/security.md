@@ -18,3 +18,5 @@
 - Mobile notification actions only update local workflow state: snooze, mark a
   washer load handled, or record yes/no validation. They do not control
   appliances.
+- Validation prompts are disabled by default in production; production washer
+  notifications use the configured recipient list.
