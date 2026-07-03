@@ -14,7 +14,8 @@ power readings into lifecycle events and actionable mobile notifications.
 
 ## Flow
 
-1. The service starts an HTTP health/status endpoint.
+1. The service starts a small HTTP server that serves health, detailed status,
+   browser-friendly service docs, and an OpenAPI document.
 2. It connects to Home Assistant over WebSocket through
    `homelab.HomeAssistantWebSocketClient`.
 3. It loads current washer and dryer power state, then subscribes to

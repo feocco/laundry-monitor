@@ -22,7 +22,8 @@ python -m laundry_monitor.main
 
 Copy `.env.example` to `.env` for local testing and fill in the Home Assistant
 token and mobile notify service names. The service exposes `GET /health` and
-`GET /v1/status` on port `8102` by default.
+`GET /v1/status` on port `8102` by default, plus browser-friendly service docs
+at `GET /docs` and an OpenAPI 3.1 description at `GET /openapi.json`.
 
 Persistent runtime state lives under `data/`.
 

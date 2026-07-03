@@ -6,6 +6,8 @@
 - App source and generic examples may live in this repo.
 - Runtime secrets and host-specific configuration belong outside this repo.
 - The container should expose only the configured service port.
+- The current inbound HTTP surface is read-only and public: `GET /health`,
+  `GET /v1/status`, `GET /docs`, and `GET /openapi.json`.
 
 ## Credentials And State
 
